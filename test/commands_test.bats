@@ -47,7 +47,7 @@ teardown() {
   assert_output "exec called with exec -i dokku-mariadbkr sh -c exec mysql -u root -h 127.0.0.1 --password=fakepass"
 }
 
-@test "mariadb:url returns psql url" {
+@test "mariadb:url returns mysql url" {
   run dokku mariadb:create testapp
   run dokku mariadb:url testapp
   PASS=$(cat "$MARIADB_ROOT/pass_testapp")
@@ -63,7 +63,7 @@ teardown() {
   assert_output "exec called with exec --interactive --tty dokku-mariadbkr env TERM=$TERM mysql -h 127.0.0.1 -u testapp --password=$PASS testapp"
 }
 
-@test "mariadb:stop stops psql container" {
+@test "mariadb:stop stops mysql container" {
   run dokku mariadb:stop
   assert_success
   assert_output "-----> Stopping MariaDB server"

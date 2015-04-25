@@ -123,14 +123,14 @@ case "$1" in
   help)
     cat && cat<<EOF
     mariadb:admin_console                           Launch a mariadb admin cli
-    mariadb:console <app>                           Launch a mariadb cli for <app>
-    mariadb:create <app>                            Create a mariadb database for <app>
-    mariadb:delete <app>                            Delete mariadb database for <app>
-    mariadb:url <app>                               Get DATABASE_URL for <app>
-    mariadb:dump <app> > <filename.dump>            Dump <app> database to file
-    mariadb:restore <app> < <filename.*>            Restore database to <app> from file
-    mariadb:restart                                 Restart the mariadb docker container
+    mariadb:console     <app>                       Launch a mariadb cli for <app>
+    mariadb:create      <app>                       Create a mariadb database for <app>
+    mariadb:delete      <app>                       Delete mariadb database for <app>
+    mariadb:url         <app>                       Get DATABASE_URL for <app>
+    mariadb:dump        <app> > <filename.dump>     Dump <app> database to dump file
+    mariadb:restore     <app> < <filename.*>        Restore database to <app> from file
     mariadb:list                                    List all databases
+    mariadb:restart                                 Restart the mariadb docker container
     mariadb:start                                   Start the mariadb docker container if it isn't running
     mariadb:status                                  Shows status of mariadb
     mariadb:stop                                    Stop the mariadb docker container
