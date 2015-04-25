@@ -39,7 +39,7 @@ database_name() {
 }
 
 _mysql() {
-  echo "$1" | docker exec $MARIADB_CONTAINER_NAME mysql -u root -h 127.0.0.1 --password=$ADMIN_PW
+  echo "$1" | docker exec -i $MARIADB_CONTAINER_NAME sh -c "exec mysql -u root -h 127.0.0.1 --password=$ADMIN_PW"
 }
 
 db_url() {

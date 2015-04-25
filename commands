@@ -74,14 +74,14 @@ case "$1" in
     check_container; verify_app_name "$APP"; check_exists
     DATABASE=$(cat "$MARIADB_ROOT/db_$APP")
     PASSWORD=$(cat "$MARIADB_ROOT/pass_$APP")
-    docker exec -i "$MARIADB_CONTAINER_NAME" env PGPASSWORD="$PASSWORD" pg_dump -Fc --no-acl --no-owner -h localhost -U "$DATABASE" -w "$DATABASE"
+    interactive_docker_exec "$MARIADB_CONTAINER_NAME" mysqldump -u root --password="$ADMIN_PW" -h 127.0.0.1 "$DATABASE"
     ;;
 
   mariadb:restore)
     check_container; verify_app_name "$APP"; check_exists
     DATABASE=$(cat "$MARIADB_ROOT/db_$APP")
     PASSWORD=$(cat "$MARIADB_ROOT/pass_$APP")
-    cat - | docker exec -i "$MARIADB_CONTAINER_NAME" env PGPASSWORD="$PASSWORD" pg_restore -h localhost -cO -d "$DATABASE" -U "$DATABASE" -w
+    cat - | docker exec -i $MARIADB_CONTAINER_NAME sh -c "exec mysql -u root -h 127.0.0.1 --password=$ADMIN_PW"
     ;;
 
   mariadb:status)
