@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -eo pipefail; [[ $DOKKU_TRACE  ]] && set -x
+
+APP="$2"
+MARIADB_ROOT="$DOKKU_ROOT/.mariadbkr"
+MARIADB_IMAGE="mariadb:10"
+MARIADB_CONTAINER_NAME="dokku-mariadbkr"
+MARIADB_PORT=3306
+MARIADB_HOST=mariadb
+
+# remove with dokku 0.3.18
+verify_app_name() {
+  local APP="$1"
+  [[ ! -n "$APP" ]] && dokku_log_fail "(verify_app_name) APP must not be null"
+  [[ ! -d "$DOKKU_ROOT/$APP" ]] && dokku_log_fail "App $APP does not exist"
+  IMAGE="dokku/$APP"
+  return 0
+}
+
+check_already_exists() {
+  [[ -f "$MARIADB_ROOT/db_$APP" ]] && echo "Database for $APP already exists" && exit 1
+}
+
+check_exists() {
+  [[ ! -f "$MARIADB_ROOT/db_$APP" ]] && echo "No database configured for $APP" && exit 1
+}
+
+check_container() {
+  [[ -z "$MARIADB_ID" ]] && echo "MariaDB container not started. Start with dokku mariadb:start" && exit 1
+}
+
+load_container_id() {
+  ADMIN_PW=$(cat "$MARIADB_ROOT/admin_pw")
+  MARIADB_ID=$(docker ps -f status=running | grep "$MARIADB_CONTAINER_NAME" | awk '{print $1}') || true
+}
+
+database_name() {
+  echo "$1" | tr .- _
+}
+
+_mysql() {
+  echo "$1" | docker exec $MARIADB_CONTAINER_NAME mysql -u root -h 127.0.0.1 --password=$ADMIN_PW
+}
+
+db_url() {
+  local APP="$1"
+  local DATABASE=$(cat "$MARIADB_ROOT/db_$APP")
+  local PASSWORD=$(cat "$MARIADB_ROOT/pass_$APP")
+  echo "mysql://${DATABASE}:${PASSWORD}@${MARIADB_HOST}:${MARIADB_PORT}/${DATABASE}"
+}
+
+env_for() {
+  local APP="$1"
+  if [[ -f "$MARIADB_ROOT/db_$APP" ]] && [[ -f "$MARIADB_ROOT/pass_$APP" ]]; then
+    local URL=$(db_url "$APP")
+    local DATABASE=$(cat "$MARIADB_ROOT/db_$APP")
+    local PASSWORD=$(cat "$MARIADB_ROOT/pass_$APP")
+    echo "DATABASE_URL=$URL MYSQL_URL=$URL DB_TYPE=mariadb DB_HOST=$MARIADB_HOST DB_PORT=$MARIADB_PORT DB_NAME=$DATABASE DB_USER=$DATABASE DB_PASS=$PASSWORD"
+  fi
+}
+
+set_env_for() {
+  local APP="$1"
+  dokku_log_info1 "Setting config vars for $APP"
+  dokku config:set-norestart "$APP" $(env_for "$APP") &> /dev/null
+}
+
+unset_env_for() {
+  local APP="$1"
+  dokku_log_info1 "Unsetting config vars for $APP"
+  dokku config:unset-norestart "$APP" DATABASE_URL MYSQL_URL DB_TYPE DB_HOST DB_PORT DB_NAME DB_USER DB_PASS &> /dev/null
+}
+
+interactive_docker_exec() {
+  local TTY_OPT=$([[ -t 0 ]] && echo "--tty")
+  docker exec --interactive $TTY_OPT "$@"
+}

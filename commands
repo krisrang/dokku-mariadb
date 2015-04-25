@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
+source "$PLUGIN_PATH/common/functions"
+source "$(dirname $0)/functions"
+set +e
+
+if [[ $1 == mariadb:* ]]; then
+  load_container_id
+fi
+
+case "$1" in
+  mariadb:admin_console)
+    check_container
+    interactive_docker_exec "$MARIADB_CONTAINER_NAME" env TERM=$TERM mysql -h 127.0.0.1 -u root --password="$ADMIN_PW"
+    ;;
+
+  mariadb:console)
+    check_container; verify_app_name "$APP"; check_exists
+    DATABASE=$(cat "$MARIADB_ROOT/db_$APP")
+    PASSWORD=$(cat "$MARIADB_ROOT/pass_$APP")
+    interactive_docker_exec "$MARIADB_CONTAINER_NAME" env TERM="$TERM" mysql -h 127.0.0.1 -u "$DATABASE" --password="$PASSWORD" "$DATABASE"
+    ;;
+
+  mariadb:url)
+    check_container; verify_app_name "$APP"; check_exists
+    db_url "$APP"
+    ;;
+
+  mariadb:create)
+    check_container; verify_app_name "$APP"; check_already_exists
+    PASSWORD=$(openssl rand -hex 32)
+    DATABASE=$(database_name "$APP")
+    echo $DATABASE > "$MARIADB_ROOT/db_$APP"
+    echo $PASSWORD > "$MARIADB_ROOT/pass_$APP"
+    chmod 600 "$MARIADB_ROOT/db_$APP" "$MARIADB_ROOT/pass_$APP"
+    dokku_log_info1 "Creating database $APP"
+
+    _mysql "CREATE USER '$DATABASE'@'%' IDENTIFIED BY 'temporary_password';" > /dev/null
+    _mysql "SET PASSWORD FOR '$DATABASE'@'%' = PASSWORD('$PASSWORD');" > /dev/null
+    _mysql "CREATE DATABASE $DATABASE;" > /dev/null
+    _mysql "GRANT ALL PRIVILEGES ON $DATABASE.* to '$DATABASE'@'%';" > /dev/null
+    set_env_for "$APP"
+    ;;
+
+  mariadb:delete)
+    check_container; verify_app_name "$APP"; check_exists
+    DATABASE=$(cat "$MARIADB_ROOT/db_$APP")
+    dokku_log_info1 "Deleting database $APP"
+    _mysql "DROP USER '$DATABASE'@'%';" > /dev/null
+    _mysql "DROP DATABASE $DATABASE;"  > /dev/null
+    rm -f "$MARIADB_ROOT/db_$APP" "$MARIADB_ROOT/pass_$APP"
+    if [[ -d "$DOKKU_ROOT/$APP" ]]; then
+      unset_env_for "$APP"
+    fi
+    ;;
+
+  mariadb:list)
+    check_container
+    _mysql "SHOW DATABASES;"
+    ;;
+
+  mariadb:restart)
+    dokku mariadb:stop
+    dokku mariadb:start
+    ;;
+
+  mariadb:stop)
+    check_container
+    dokku_log_info1 "Stopping MariaDB server"
+    docker stop "$MARIADB_CONTAINER_NAME" > /dev/null
+    ;;
+
+  mariadb:dump)
+    check_container; verify_app_name "$APP"; check_exists
+    DATABASE=$(cat "$MARIADB_ROOT/db_$APP")
+    PASSWORD=$(cat "$MARIADB_ROOT/pass_$APP")
+    docker exec -i "$MARIADB_CONTAINER_NAME" env PGPASSWORD="$PASSWORD" pg_dump -Fc --no-acl --no-owner -h localhost -U "$DATABASE" -w "$DATABASE"
+    ;;
+
+  mariadb:restore)
+    check_container; verify_app_name "$APP"; check_exists
+    DATABASE=$(cat "$MARIADB_ROOT/db_$APP")
+    PASSWORD=$(cat "$MARIADB_ROOT/pass_$APP")
+    cat - | docker exec -i "$MARIADB_CONTAINER_NAME" env PGPASSWORD="$PASSWORD" pg_restore -h localhost -cO -d "$DATABASE" -U "$DATABASE" -w
+    ;;
+
+  mariadb:status)
+    [[ -n "$MARIADB_ID" ]] && echo "MariaDB container running with ID: $MARIADB_ID" && exit 0
+    echo "MariaDB container not running"
+    ;;
+
+  mariadb:docker_args)
+    STDIN=$(cat)
+    if [[ -f "$MARIADB_ROOT/db_$APP" ]]; then
+      echo "$STDIN --link $MARIADB_CONTAINER_NAME:$MARIADB_HOST"
+    else
+      echo "$STDIN"
+    fi
+    ;;
+
+  mariadb:pre_build)
+    [[ ! -f "$MARIADB_ROOT/db_$APP" ]] && exit 0
+    [[ -z "$MARIADB_ID" ]] && dokku mariadb:start
+    sleep 2
+    exit 0
+    ;;
+
+  mariadb:start)
+    if [[ -n "$MARIADB_ID" ]]; then
+      echo "MariaDB container already running with ID: $MARIADB_ID"
+      exit 1
+    fi
+    OLD_ID=$(docker ps -f status=exited | grep "$MARIADB_CONTAINER_NAME" | awk '{print $1}')
+    if [[ -n $OLD_ID ]]; then
+      dokku_log_info1 "Restarting previously stopped MariaDB container $OLD_ID"
+      docker start "$OLD_ID" > /dev/null
+      exit 0
+    fi
+    dokku_log_info1 "Starting MariaDB server"
+    docker run -v "$MARIADB_ROOT/data":/var/lib/mysql -d --name "$MARIADB_CONTAINER_NAME" "$MARIADB_IMAGE" > /dev/null
+    ;;
+
+  help)
+    cat && cat<<EOF
+    mariadb:admin_console                           Launch a mariadb admin cli
+    mariadb:console <app>                           Launch a mariadb cli for <app>
+    mariadb:create <app>                            Create a mariadb database for <app>
+    mariadb:delete <app>                            Delete mariadb database for <app>
+    mariadb:url <app>                               Get DATABASE_URL for <app>
+    mariadb:dump <app> > <filename.dump>            Dump <app> database to file
+    mariadb:restore <app> < <filename.*>            Restore database to <app> from file
+    mariadb:restart                                 Restart the mariadb docker container
+    mariadb:list                                    List all databases
+    mariadb:start                                   Start the mariadb docker container if it isn't running
+    mariadb:status                                  Shows status of mariadb
+    mariadb:stop                                    Stop the mariadb docker container
+EOF
+    ;;
+esac

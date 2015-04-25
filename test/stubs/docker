@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+case "$1" in
+  run)
+    echo "testid"
+    ;;
+  ps)
+    echo "testid mariadb:10 \"/entrypoint.sh redi 2 days ago Up 47 hours 0.0.0.0:32768->6379/tcp dokku-mariadbkr"
+    ;;
+  exec)
+    if [[ $@ = *"pg_dump"* ]]; then
+      echo "pg_dump"
+      exit 0
+    fi
+    if [[ $@ = *"pg_restore"* ]]; then
+      echo "pg_dump"
+      exit 0
+    fi
+    echo "exec called with $@"
+    ;;
+  inspect)
+    cat<<EOF
+    "IPAddress": "172.17.0.34",
+EOF
+    ;;
+esac
