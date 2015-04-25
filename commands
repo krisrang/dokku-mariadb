@@ -81,7 +81,7 @@ case "$1" in
     check_container; verify_app_name "$APP"; check_exists
     DATABASE=$(cat "$MARIADB_ROOT/db_$APP")
     PASSWORD=$(cat "$MARIADB_ROOT/pass_$APP")
-    cat - | docker exec -i $MARIADB_CONTAINER_NAME sh -c "exec mysql -u root -h 127.0.0.1 --password=$ADMIN_PW"
+    cat - | docker exec -i $MARIADB_CONTAINER_NAME sh -c "exec mysql -u root -h 127.0.0.1 --password=$ADMIN_PW $DATABASE"
     ;;
 
   mariadb:status)
