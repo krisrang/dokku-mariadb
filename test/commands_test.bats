@@ -27,7 +27,7 @@ teardown() {
   assert_output "-----> Creating database testapp
 -----> Setting config vars for testapp"
   run dokku config testapp
-  assert_contains "$output" "mysql://testapp"
+  assert_contains "$output" "mysql2://testapp"
 }
 
 @test "mariadb:delete deletes database" {
@@ -52,7 +52,7 @@ teardown() {
   run dokku mariadb:url testapp
   PASS=$(cat "$MARIADB_ROOT/pass_testapp")
   assert_success
-  assert_output "mysql://testapp:$PASS@mariadb:3306/testapp"
+  assert_output "mysql2://testapp:$PASS@mariadb:3306/testapp"
 }
 
 @test "mariadb:console calls docker exec" {
