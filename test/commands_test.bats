@@ -4,6 +4,7 @@ load test_helper
 
 setup() {
   mkdir -p "$MARIADB_ROOT"
+  echo "fakepass" > "$MARIADB_ROOT/admin_pw"
   dokku apps:create testapp
   # $dokkucmd mariadb:start
 }
@@ -43,7 +44,7 @@ teardown() {
   run dokku mariadb:create testapp
   run dokku mariadb:list --quiet
   assert_success
-  assert_output "exec called with exec --interactive --tty dokku-psqlkr env TERM=$TERM psql -h localhost -U postgres -c \l"
+  assert_output "exec called with exec -i dokku-mariadbkr sh -c exec mysql -u root -h 127.0.0.1 --password=fakepass"
 }
 
 @test "mariadb:url returns psql url" {
@@ -59,7 +60,7 @@ teardown() {
   run dokku mariadb:console testapp
   PASS=$(cat "$MARIADB_ROOT/pass_testapp")
   assert_success
-  assert_output "exec called with exec --interactive --tty dokku-psqlkr env TERM=$TERM PGPASSWORD=$PASS psql -h localhost -U testapp testapp"
+  assert_output "exec called with exec --interactive --tty dokku-mariadbkr env TERM=$TERM mysql -h 127.0.0.1 -u testapp --password=$PASS testapp"
 }
 
 @test "mariadb:stop stops psql container" {
@@ -72,7 +73,7 @@ teardown() {
   run dokku mariadb:create testapp
   run dokku mariadb:dump testapp
   assert_success
-  assert_output "pg_dump"
+  assert_output "exec called with exec --interactive --tty dokku-mariadbkr mysqldump -u root --password=fakepass -h 127.0.0.1 testapp"
 }
 
 @test "mariadb:docker_args gives correct link" {
