@@ -1,7 +1,7 @@
 dokku-mariadb [![Build Status](https://travis-ci.org/krisrang/dokku-mariadb.svg?branch=master)](https://travis-ci.org/krisrang/dokku-mariadb)
 ================
 
-dokku-mariadb is a plugin for [dokku][dokku] that provides PostgreSQL servers for your applications.
+dokku-mariadb is a plugin for [dokku][dokku] that provides MariadDB servers for your applications.
 
 It uses the official MariadDB docker image (version 10).
 
