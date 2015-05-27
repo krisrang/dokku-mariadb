@@ -1,6 +1,6 @@
 language: bash
 env:
-  - DOKKU_VERSION=v0.3.17
+  - DOKKU_VERSION=v0.3.18
   - DOKKU_VERSION=master
 before_install:
   - sudo add-apt-repository ppa:duggan/bats --yes

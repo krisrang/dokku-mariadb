@@ -5,7 +5,7 @@ dokku-mariadb is a plugin for [dokku][dokku] that provides MariadDB servers for 
 
 It uses the official MariadDB docker image (version 10).
 
-This version is tested against dokku 0.3.17.
+This version is tested against dokku 0.3.18.
 
 ## Installation
 

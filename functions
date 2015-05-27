@@ -8,15 +8,6 @@ MARIADB_CONTAINER_NAME="dokku-mariadbkr"
 MARIADB_PORT=3306
 MARIADB_HOST=mariadb
 
-# remove with dokku 0.3.18
-verify_app_name() {
-  local APP="$1"
-  [[ ! -n "$APP" ]] && dokku_log_fail "(verify_app_name) APP must not be null"
-  [[ ! -d "$DOKKU_ROOT/$APP" ]] && dokku_log_fail "App $APP does not exist"
-  IMAGE="dokku/$APP"
-  return 0
-}
-
 check_already_exists() {
   [[ -f "$MARIADB_ROOT/db_$APP" ]] && echo "Database for $APP already exists" && exit 1
 }
