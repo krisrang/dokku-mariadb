@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
 set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
 
-[[ -n $1 ]] && dokku mariadb:docker_args "$1"
+STDIN=$(cat)
+output=""
+
+[[ -n $1 ]] && output=%(dokku mariadb:docker_args "$1");
+
+echo "$STDIN$output"
