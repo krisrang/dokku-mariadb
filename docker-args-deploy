@@ -4,6 +4,6 @@ set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
 STDIN=$(cat)
 output=""
 
-[[ -n $1 ]] && output=%(dokku mariadb:docker_args "$1");
+[[ -n $1 ]] && output=$(dokku mariadb:docker_args "$1");
 
 echo "$STDIN$output"
