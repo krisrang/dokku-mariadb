@@ -7,4 +7,4 @@ mkdir -p "$MARIADB_ROOT/data"
 chown dokku:dokku -R "$MARIADB_ROOT" &> /dev/null || true
 PASSWORD=$(openssl rand -hex 32)
 echo $PASSWORD > "$MARIADB_ROOT/admin_pw"
-docker run -v "$MARIADB_ROOT/data":/var/lib/mysql -d -e MYSQL_ROOT_PASSWORD=$PASSWORD --name "$MARIADB_CONTAINER_NAME" "$MARIADB_IMAGE"
+docker run -v "$MARIADB_ROOT/data":/var/lib/mysql -d -e MYSQL_ROOT_PASSWORD=$PASSWORD --name "$MARIADB_CONTAINER_NAME" --restart always "$MARIADB_IMAGE"
